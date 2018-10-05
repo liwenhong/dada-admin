@@ -5,7 +5,7 @@ const debug = true
  */
 export function Bmob_Init(){
   console.log('bmob init ......')
-  Bmob.initialize("1245fbae9dd53f523ac14b293ee5dc60", "590809d4a7db3777c5647c2f8f17fd88");
+  Bmob.initialize("1245fbae9dd53f523ac14b293ee5dc60", "590809d4a7db3777c5647c2f8f17fd88","7231ab8e05f13a9bb6d1d3018a9b497f");
 }
 
 /**
@@ -189,4 +189,87 @@ export function Bmob_CreatePoint(table,objectId){
   const pointer = Bmob.Pointer(table)
   const poiID = pointer.set(objectId)
   return poiID
+}
+export function Bmob_UploadImg(name,item){
+  return new Promise((resolve,reject) => {
+    let file = Bmob.File(name, item);
+    file.save().then(res => {
+      console.log(res.length);
+      console.log(res);
+      resolve(res)
+    }).catch(err => {
+      console.log(err)
+      reject(err)
+    })
+  })
+}
+
+/**
+ * 获取用户最新信息
+ */
+export function getUserNewInfo(){
+  return new Promise((resolve,reject) => {
+    resolve(Bmob.User.current())
+  })
+}
+/**
+ * 注册
+ * @param data 用户注册数据
+ */
+export function register(data){
+  return new Promise((resolve,reject) => {
+    let params = {
+      username: data.mobile,
+      password: data.pwd,
+      phone: data.mobile,
+      status: data.status,
+      nickName:!!data.nickName?data.nickName:'',
+    }
+    if(!!data.carInfo){
+      params.carInfo = data.carInfo
+    }
+    Bmob.User.register(params).then(res => {
+      console.log(res)
+      //  注册成功后往userInfo表里添数据
+      const pointer = Bmob.Pointer('_User')
+      const poiID = pointer.set(res.objectId)
+      let da = {
+        username: data.mobile,
+        status: '0',
+        type: '2',
+        user: poiID,
+        nickName:!!data.nickName?data.nickName:''
+      }
+      Bomb_Add('userInfo', da).then(t => {
+        res.uObjectId = t.objectId
+        resolve(res)
+      }).catch(err => {
+        reject(err)
+      })
+    }).catch(err => {
+      console.log(err)
+      reject(err)
+    });
+  })
+}
+
+/**
+ * 根据条件查询数据
+ * @param table 表名称
+ * @param params 查询参数
+ */
+export function Bomb_Search2(table,params){
+  return new Promise((resolve,reject) => {
+    const query = Bmob.Query(table);
+    for(let key in params){
+      query.equalTo(key,"==", params[key])
+    }
+    query.order("-updatedAt");
+    query.find().then(t => {
+      debug && console.log(t)
+      resolve(t)
+    }).catch(error => {
+      reject(error)
+    })
+  })
 }

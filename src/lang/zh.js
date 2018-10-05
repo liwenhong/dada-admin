@@ -62,7 +62,8 @@ export default {
     clipboardDemo: 'Clipboard',
     i18n: '国际化',
     externalLink: '外链',
-    OrderManage: '订单管理'
+    OrderManage: '订单管理',
+    CarManage: '车辆管理',
   },
   navbar: {
     logOut: '退出登录',

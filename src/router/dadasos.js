@@ -20,6 +20,24 @@ const dadaRouter = [
         meta: { title: 'OrderManage', icon: 'list' }
       }
     ]
+  },
+  {
+    path: '/car-manage',
+    component: Layout,
+    redirect: 'noredirect',
+    name: 'car-manager',
+    meta: {
+      title: 'car-manager',
+      icon: 'car-manager'
+    },
+    children: [
+      {
+        path: 'car-manage',
+        component: () => import('@/views/dadasos/car-manager'),
+        name: 'CarManage',
+        meta: { title: 'CarManage', icon: 'nested' }
+      }
+    ]
   }
 ]
 

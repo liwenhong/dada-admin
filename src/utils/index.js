@@ -321,3 +321,57 @@ export function clear(){
   window.localStorage.clear();
 }
 
+//判断是否是身份号码
+export function isIDCardNum(num) {
+  num = num.toUpperCase();
+  //身份证号码为18位，18位前17位为数字，最后一位是校验位，可能为数字或字符X。
+  if (!/(^\d{17}([0-9]|X)$)/.test(num)) {
+    return false;
+  }
+  //校验位按照ISO 7064:1983.MOD 11-2的规定生成，X可以认为是数字10。
+  //下面分别分析出生日期和校验位
+  let re,
+    nTemp = 0,
+    len = num.length,
+    arrInt = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2],
+    arrCh = ["1", "0", "X", "9", "8", "7", "6", "5", "4", "3", "2"];
+  if (len === 18) {
+    re = new RegExp(/^(\d{6})(\d{4})(\d{2})(\d{2})(\d{3})([0-9]|X)$/);
+    let arrSplit = num.match(re);
+
+    //检查生日日期是否正确
+    let dtmBirth = new Date(
+      arrSplit[2] + "/" + arrSplit[3] + "/" + arrSplit[4]
+    );
+    let bGoodDay;
+    bGoodDay =
+      dtmBirth.getFullYear() == Number(arrSplit[2]) &&
+      dtmBirth.getMonth() + 1 == Number(arrSplit[3]) &&
+      dtmBirth.getDate() == Number(arrSplit[4]);
+    if (!bGoodDay) {
+      return false;
+    } else {
+      //检验18位身份证的校验码是否正确。
+      //校验位按照ISO 7064:1983.MOD 11-2的规定生成，X可以认为是数字10。
+      let valnum;
+      for (let i = 0; i < 17; i++) {
+        nTemp += num.substr(i, 1) * arrInt[i];
+      }
+      valnum = arrCh[nTemp % 11];
+      return arrCh[nTemp % 11] == num.substr(17, 1);
+    }
+  }
+  return false;
+}
+ /**
+ * 验证是否是手机号码
+ * @param mobile 手机号码
+ */
+export function isMobile(mobile) {
+  if (mobile) {
+    let moreg = /^1\d{10}$/;
+    return moreg.test(mobile.trim());
+  } else {
+    return false;
+  }
+}
