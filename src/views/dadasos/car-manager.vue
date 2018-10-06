@@ -338,7 +338,7 @@ export default {
           }else if(roles == 'admin'){
             //  根据下拉框选择公司
             if(!!this.company && this.company !=''){
-              this.rowInfo.company = Bmob_CreatePoint('company',this.rowInfo.company2)
+              this.rowInfo.company = Bmob_CreatePoint('company',this.company)
             }
           }else{
             this.$message.error("您暂无权限操作")

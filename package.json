@@ -38,6 +38,7 @@
     "clipboard": "1.7.1",
     "codemirror": "5.39.2",
     "connect": "3.6.6",
+    "coordtransform": "^2.1.2",
     "driver.js": "0.5.2",
     "dropzone": "5.2.0",
     "echarts": "4.1.0",

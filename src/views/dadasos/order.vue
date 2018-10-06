@@ -1,5 +1,6 @@
 <template>
   <div class="app-container">
+    <div id="map"></div>
     <div class="filter-container">
       <el-date-picker v-model="listQuery.time" type="daterange" align="right" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions" class="filter-item" format="yyyy 年 MM 月 dd 日" value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
       <!-- <el-input v-model="listQuery.mobile" placeholder="手机号查询" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter"/> -->
@@ -49,9 +50,9 @@
       </el-table-column>
       <el-table-column label="终点" min-width="200px" prop="addressToDetail" align="center">
       </el-table-column>
-      <el-table-column label="救援师傅" min-width="120px" prop="" align="center">
+      <el-table-column label="救援师傅" min-width="120px" prop="" align="center" >
         <template slot-scope="scope">
-          <span>{{ !!scope.row.carUser?scope.row.carUser.nickname:'' }}</span>
+          <span>{{ !!scope.row.carUser?scope.row.carUser.nickName:'无' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="订单金额" width="110px" align="center" prop="amount" >
@@ -69,38 +70,61 @@
     </div>
 
     <el-dialog :title="dialogStatus=='create'?'添加订单':'修改订单'" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :model="rowInfo" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
+      <el-form ref="dataForm" :model="rowInfo" :rules="rules" label-position="right" label-width="100px" style="width: 80%;">
+        <el-form-item label="订单类型" prop="timestamp">
+          <el-select v-model="order.type" placeholder="请选择订单类型" style="width:120px;" :disabled="dialogStatus!='create'">
+            <el-option
+              v-for="item in cityOptions"
+              :key="item.key"
+              :label="item.value"
+              :value="item.key" >
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="起点" prop="addressFromDetail">
+          <div style="display:flex;">
+            <el-autocomplete
+              popper-class="my-autocomplete"
+              v-model="rowInfo.addressFromDetail"
+              :fetch-suggestions="querySearchAsync"
+              placeholder="请输入起点" :trigger-on-focus="false"
+              @select="handleSelect($event,'addressFromDetail')" style="width:80%" :disabled="dialogStatus!='create'">
+            <template slot-scope="{ item }">
+              <div class="name">{{ item.title }}</div>
+              <span class="addr">{{ item.address }}</span>
+            </template>
+            </el-autocomplete>
+          </div>
+        </el-form-item>
+        <el-form-item label="终点" prop="addressToDetail">
+          <div style="display:flex;">
+            <el-autocomplete
+              popper-class="my-autocomplete"
+              v-model="rowInfo.addressToDetail"
+              :fetch-suggestions="querySearchAsync"
+              placeholder="请输入终点" :trigger-on-focus="false"
+              @select="handleSelect($event,'addressToDetail')" style="width:80%" :disabled="dialogStatus!='create'">
+            <template slot-scope="{ item }">
+              <div class="name">{{ item.title }}</div>
+              <span class="addr">{{ item.address }}</span>
+            </template>
+            </el-autocomplete>
+          </div>
 
-        <!-- <el-form-item :label="$t('table.date')" prop="timestamp">
-          <el-date-picker v-model="temp.timestamp" type="datetime" placeholder="Please pick a date"/>
-        </el-form-item> -->
-        <el-form-item label="起点" prop="title">
-          <el-autocomplete
-            v-model="rowInfo.addressFromDetail"
-            :fetch-suggestions="querySearchAsync"
-            placeholder="请输入起点" :trigger-on-focus="false"
-            @select="handleSelect" style="width:80%"
-          ></el-autocomplete>
         </el-form-item>
-        <el-form-item label="终点" prop="title">
-          <el-autocomplete
-            v-model="rowInfo.addressToDetail"
-            :fetch-suggestions="querySearchAsync"
-            placeholder="请输入终点" :trigger-on-focus="false"
-            @select="handleSelect" style="width:80%"
-          ></el-autocomplete>
+        <el-form-item :label="dialogStatus=='create'?'指派师傅':'救援师傅'">
+          <span v-if="dialogStatus!='create'">{{!!rowInfo.carUser?rowInfo.carUser.nickName:'无'}}</span>
+          <el-select v-else v-model="rowInfo.carUser" placeholder="选择救援师傅" @focus="chooseCar" @change="changeCar()">
+            <el-option v-for="(item,i) in carOptions" :key="i" :label="item.realName+'--'+item.carNumber" :value="item.uInfo.objectId" :disabled="!!item.uInfo &&  !!item.uInfo.status && item.uInfo.status!=0"/>
+          </el-select>
         </el-form-item>
-        <el-form-item label="救援师傅">
-          <!-- <el-select v-model="temp.status" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item"/>
-          </el-select> -->
-        </el-form-item>
-        <el-form-item label="订单金额">
-          <el-input :disabled="(dialogStatus=='update' && roles.indexOf('admin') ==-1)" v-model="rowInfo.amount" style="width:200px;"></el-input>
+        <el-form-item label="订单金额(元)">
+          <el-input v-if="dialogStatus!='create'" :disabled="(dialogStatus=='update' && roles.indexOf('admin') ==-1)" v-model="rowInfo.amount" style="width:200px;"></el-input>
+          <el-input v-else v-model="order.amount" style="width:200px;"></el-input>
         </el-form-item>
         <el-form-item label="订单状态">
           <el-select v-model="rowInfo.status" placeholder="订单状态" clearable>
-            <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name" :value="item.key"/>
+            <el-option :disabled="item.key =='4'" v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name" :value="item.key"/>
           </el-select>
         </el-form-item>
       </el-form>
@@ -108,8 +132,8 @@
 
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">{{ $t('table.cancel') }}</el-button>
-        <el-button v-if="dialogStatus=='create'" type="primary" @click="createData">{{ $t('table.confirm') }}</el-button>
-        <el-button v-else type="primary" @click="updateData">{{ $t('table.confirm') }}</el-button>
+        <el-button v-if="dialogStatus=='create'" :loading="downloadLoading" type="primary" @click="createData">{{ $t('table.confirm') }}</el-button>
+        <el-button v-else type="primary" @click="updateData" :loading="downloadLoading">{{ $t('table.confirm') }}</el-button>
       </div>
     </el-dialog>
 
@@ -129,7 +153,8 @@
 <script>
 import waves from '@/directive/waves' // 水波纹指令
 import { parseTime, pickerOptions } from '@/utils'
-import { Bomb_Search } from '@/utils/bmob.js'
+import { Bomb_Search, getUserNewInfo, Bmob_CreatePoint, Bmob_CreateLocation, Bomb_Add, Bmob_Update, del } from '@/utils/bmob.js'
+import { searchPlace, transferLocation, getDistanceByPoint } from '@/utils/baidu-map.js'
 import { mapGetters } from 'vuex'
 
 const calendarTypeOptions = [
@@ -159,6 +184,8 @@ export default {
   },
   data() {
     return {
+      city:'长沙市',
+      cityOptions: [{key:'1',value:'道路救援'},{key:'2',value:'长途运输'}],
       pickerOptions:pickerOptions,
       list: null,
       total: null,
@@ -174,6 +201,31 @@ export default {
       downloadLoading: false,
       rowInfo: {},
       dialogStatus: '',
+      carOptions: [],
+      order: {
+        user: null,
+        addressFromDetail: '',
+        addressTo: '',
+        addressToDetail: '',
+        amount: '',
+        carUser: null,
+        fromLat: '',
+        fromLng: '',
+        status: '0',
+        toLat: '',
+        toLng: '',
+        addressFrom: '',
+        type: '1'
+      },
+      price:{ '1': 7, '2': 8 },
+      rules:{
+        addressToDetail:[
+          { required: true, message: '请选择终点',trigger: 'blur' }
+        ],
+        addressFromDetail:[
+          { required: true,message: '请选择起点', trigger: 'blur' }
+        ]
+      }
     }
   },
   created() {
@@ -185,17 +237,69 @@ export default {
     ])
   },
   methods: {
-    handleSelect(e){
+    changeCar(){
+      console.log(this.rowInfo.carUser)
+      this.order.carUser = Bmob_CreatePoint('userInfo',this.rowInfo.carUser)
+      this.rowInfo.status = '1'
+    },
+    async chooseCar(e){
       console.log(e)
+      //  选择救援师傅，判断用户是否是企业用户
+      let objectId,isCompany
+      await getUserNewInfo().then((res) => {
+        objectId = res.objectId;
+        isCompany = res.isCompany;
+      })
+      if(!!isCompany && isCompany == '1'){
+        let temp = Bmob_CreatePoint('_User',objectId)
+        await Bomb_Search2('company',{ 'user': temp }).then(g => {
+          Bomb_Search('validUser',{'company':Bmob_CreatePoint('company',g[0].objectId),'status':'2'},200,1,null,{key:'uInfo',value:'userInfo'}).then(tt => {
+            console.log(tt)
+            this.carOptions = tt.data
+          })
+        })
+      }else{
+        //  超级用户
+        Bomb_Search('validUser',{'status':'2'},200,1,null,{key:'uInfo',value:'userInfo'}).then(tt => {
+          console.log(tt)
+          this.carOptions = tt.data
+        })
+      }
+    },
+    async handleSelect(e,el){
+      console.log(e.point)
+      this.$set(this.rowInfo,el,e.title)
+      await transferLocation(e.point.lat,e.point.lng).then(res => {
+        console.log(res)
+        if(el=='addressToDetail'){
+          this.order.addressTo = e.title
+          this.order.addressToDetail = e.address
+          this.order.toLng = res[0]
+          this.order.toLat = res[1]
+        }else{
+          this.order.addressFrom = e.title
+          this.order.addressFromDetail = e.address
+          this.order.fromLng = res[0]
+          this.order.fromLat = res[1]
+        }
+      })
+      if(!!this.rowInfo.addressFromDetail && this.rowInfo.addressToDetail){
+        //  计算订单金额
+        getDistanceByPoint(this.order.fromLat,this.order.fromLng,this.order.toLat,this.order.toLng,'map').then(dd => {
+          console.log(dd)
+          let gl = (Math.ceil(dd.distance.replace('公里','')) -10)
+          this.order.amount = gl<=0?200: gl*this.price[this.order.type]+200
+        })
+      }
+      console.log(this.order)
+
     },
     querySearchAsync(queryString, cb) {
-      // var restaurants = this.restaurants;
-      // var results = queryString ? restaurants.filter(this.createStateFilter(queryString)) : restaurants;
-
-      // clearTimeout(this.timeout);
-      // this.timeout = setTimeout(() => {
-      //   cb(results);
-      // }, 3000 * Math.random());
+      if(!!queryString && queryString !=''){
+        searchPlace(queryString).then(res => {
+          cb(res)
+        })
+      }
     },
     getList() {
       console.log(this.listQuery)
@@ -228,11 +332,21 @@ export default {
       this.getList()
     },
     handleModifyStatus(row, status) {
-      this.$message({
-        message: '操作成功',
-        type: 'success'
-      })
-      row.status = status
+      //  删除
+      this.$confirm('确定要删除该订单吗, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        del('Order',row.objectId).then(res => {
+          this.$message({ type: 'success', message: '删除成功'})
+          this.getList()
+        }).catch(e => {
+          this.$message.error("删除失败")
+        })
+      }).catch(() => {
+
+      });
     },
     resetTemp() {
       this.rowInfo = {}
@@ -244,23 +358,77 @@ export default {
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
+      this.order.amount = '';
+      this.order.carUser = ''
+      this.order.status = ''
     },
     createData() {
-      this.$refs['dataForm'].validate((valid) => {
+      this.$refs['dataForm'].validate(async (valid) => {
         if (valid) {
-          // this.temp.id = parseInt(Math.random() * 100) + 1024 // mock a id
-          // this.temp.author = 'vue-element-admin'
-          // createArticle(this.temp).then(() => {
-          //   this.list.unshift(this.temp)
-          //   this.dialogFormVisible = false
-          //   this.$notify({
-          //     title: '成功',
-          //     message: '创建成功',
-          //     type: 'success',
-          //     duration: 2000
-          //   })
-          // })
+          console.log(this.order)
+          if(this.order.amount == '' || this.order.amount == 0){
+            this.$message({ type: 'warning', message: '订单金额不能为空' })
+            return
+          }
+          this.downloadLoading = true
+          //  创建订单
+          let f_point = Bmob_CreateLocation(this.order.fromLat,this.order.fromLng),u_objectId
+          await getUserNewInfo().then(oo => {
+            u_objectId = oo.objectId
+          })
+          let u = Bmob_CreatePoint("_User",u_objectId),o = this.order
+          let data = {
+            addressFrom: o.addressFrom,
+            addressFromDetail: o.addressFromDetail,
+            addressTo: o.addressTo,
+            addressToDetail: o.addressToDetail,
+            locationFrom: f_point,
+            status: !!this.rowInfo.status?this.rowInfo.status:'0',
+            toLat: o.toLat,
+            toLng: o.toLng,
+            amount: o.amount,
+            user: u,
+            type: o.type
+          }
+          if(!!this.order.carUser && this.order.carUser != ''){
+            data.carUser = this.order.carUser
+            //  更改救援师傅状态
+            Bmob_Update('userInfo',data.carUser.objectId,{'status':'1'}).then(()=> {})
+          }
+          Bomb_Add('Order',data).then(rr =>{
+            this.$message({ type: 'success', message: '订单创建成功' })
+            this.dialogFormVisible = false
+            this.downloadLoading = false
+            this.getList()
+            this.toNotice(this.order.fromLat,this.order.fromLng)
+            //  如果没有指定车辆师傅，则通知附近十公里闲置的师傅
+          }).catch(err => {
+            this.downloadLoading = false
+            this.$message.error("订单创建失败，请稍后再试")
+          })
         }
+      })
+    },
+    /**
+     * 查询附近的救援师傅并短信通知
+     */
+    toNotice(latitude,langitude){
+      let self = this
+      Bmob_QueryLocation('userInfo',latitude,langitude,10,'location','0').then(res => {
+        if(res.length > 0){
+          //  附近有师傅
+          for(let i =0;i<res.length;i++){
+            //  发送短信
+            (function(j){
+              sendMsg(res[i].username,'救援').then(da => {
+                console.log(da)
+                self.$mptoast('已通知附近救援师傅，请耐心等候')
+              })
+            })(i);
+          }
+        }
+      }).catch(err => {
+        console.log(err)
       })
     },
     handleUpdate(row) {
@@ -270,28 +438,49 @@ export default {
       this.$nextTick(() => {
         this.$refs['dataForm'].clearValidate()
       })
+
     },
     updateData() {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          updateArticle(tempData).then(() => {
-            for (const v of this.list) {
-              if (v.id === this.temp.id) {
-                const index = this.list.indexOf(v)
-                this.list.splice(index, 1, this.temp)
-                break
-              }
-            }
+          console.log(this.rowInfo)
+          if(this.rowInfo.amount == '' || this.rowInfo.amount ==0){
+            this.$message({ type: 'warning', message: '订单金额不能为空' })
+            return
+          }
+          this.downloadLoading = true
+          Bmob_Update('Order',this.rowInfo.objectId,{'status':this.rowInfo.status, 'amount':parseFloat(this.rowInfo.amount)}).then(()=> {
+            this.$message({ type: 'success', message: '订单更新成功'})
             this.dialogFormVisible = false
-            this.$notify({
-              title: '成功',
-              message: '更新成功',
-              type: 'success',
-              duration: 2000
-            })
+            this.downloadLoading = false
+            this.getList()
+          }).catch(e => {
+            this.downloadLoading = false
+            this.$message.error("订单更新失败")
           })
+          if(this.rowInfo.status == '4' || this.rowInfo.status == '-1'){
+            //  更改车主状态
+            Bmob_Update('userInfo',this.rowInfo.carUser.objectId,{'status':'0'}).then(()=> {})
+          }
+          // if(this.rowInfo.status == '4'){
+          //   //  提示
+          //   this.$confirm('确定要完成救援吗, 是否继续?', '提示', {
+          //     confirmButtonText: '确定',
+          //     cancelButtonText: '取消',
+          //     type: 'warning'
+          //   }).then(() => {
+
+          //     this.$message({
+          //       type: 'success',
+          //       message: '删除成功!'
+          //     });
+          //   }).catch(() => {
+          //     this.$message({
+          //       type: 'info',
+          //       message: '已取消删除'
+          //     });
+          //   });
+          // }
         }
       })
     },
@@ -338,11 +527,30 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss">
 .pagination-container{
   text-align: center;
 }
 .el-date-editor .el-range-separator{
   padding: 0;
+}
+.my-autocomplete {
+  li {
+    line-height: normal;
+    padding: 7px;
+
+    .name {
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    .addr {
+      font-size: 12px;
+      color: #b4b4b4;
+    }
+
+    .highlighted .addr {
+      color: #ddd;
+    }
+  }
 }
 </style>

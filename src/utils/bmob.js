@@ -281,3 +281,53 @@ export function Bomb_Search2(table,params){
     })
   })
 }
+
+ /**
+ * 创建地理位置
+ * @param latitude 纬度
+ * @param longitude 经度
+ */
+export function Bmob_CreateLocation(latitude,longitude){
+  return Bmob.GeoPoint({ latitude: latitude,longitude: longitude })
+}
+/**
+ * 删除记录
+ * @param {表名} table
+ * @param {ID} objectId
+ */
+export function del(table,objectId){
+  return new Promise((resolve,reject) => {
+    const query = Bmob.Query(table);
+    query.destroy(objectId).then(res => {
+      console.log(res)
+      resolve(res)
+    }).catch(err => {
+      console.log(err)
+      reject(err)
+    })
+  })
+}
+/**
+ * 根据地理位置查询附近救援师傅
+ * @param table 表名
+ * @param latitude 维度
+ * @param langitude 经度
+ * @param km 范围
+ * @param key 地理位置字段名
+ * @param status 师傅状态
+ */
+export function Bmob_QueryLocation(table,latitude,langitude,km = 10,key,status){
+  return new Promise((resolve,reject) => {
+    const point = Bmob.GeoPoint({ latitude: latitude,longitude: langitude })
+    const query = Bmob.Query(table);
+    query.withinKilometers(key, point, km);  //10指的是公里
+    query.equalTo('status','==',status)
+    query.find().then(res => {
+      debug && console.log(res)
+      resolve(res)
+    }).catch(err => {
+      debug && console.log(err)
+      reject(err)
+    })
+  })
+}
