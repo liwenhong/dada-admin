@@ -64,6 +64,7 @@ export default {
     externalLink: '外链',
     OrderManage: '订单管理',
     CarManage: '车辆管理',
+    CompanyReview: '企业认证'
   },
   navbar: {
     logOut: '退出登录',

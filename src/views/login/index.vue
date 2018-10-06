@@ -130,8 +130,13 @@ export default {
           this.$store.dispatch('LoginByUsername', this.loginForm).then(() => {
             this.loading = false
             this.$router.push({ path: this.redirect || '/' })
-          }).catch(() => {
+          }).catch((err) => {
             this.loading = false
+            if(err.code == 101){
+              this.$message.error("用户名或密码不正确")
+            }else{
+              this.$message.error("您暂无权限登录")
+            }
           })
         } else {
           console.log('error submit!!')

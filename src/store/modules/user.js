@@ -54,10 +54,14 @@ const user = {
             reject('error')
             return
           }
-          const data = response
-          commit('SET_TOKEN', data.sessionToken)
-          setToken(data.sessionToken)
-          resolve()
+          if(response.roles.indexOf('admin') >=0 || response.roles.indexOf('company')>=0){
+            const data = response
+            commit('SET_TOKEN', data.sessionToken)
+            setToken(data.sessionToken)
+            resolve()
+          }else{
+            reject('error')
+          }
         }).catch(error => {
           reject(error)
         })

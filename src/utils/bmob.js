@@ -108,11 +108,15 @@ export function Bmob_Update(table,objectId,params){
  * @param table 表名称
  * @param params 查询参数
  */
-export function Bomb_Search(table,params,size=20,page = 1,time){
+export function Bomb_Search(table,params,size=20,page = 1,time,include){
   console.log(page,'....',size)
   return new Promise(async (resolve,reject) => {
     const query = Bmob.Query(table);
-    query.include('carUser','userInfo')
+    if(!!include){
+      query.include(include.key,include.value)
+    }else{
+      query.include('carUser','userInfo')
+    }
     for(let key in params){
       query.equalTo(key,"==", params[key])
     }
@@ -216,7 +220,7 @@ export function getUserNewInfo(){
  * 注册
  * @param data 用户注册数据
  */
-export function register(data){
+export function register(data,type = true){
   return new Promise((resolve,reject) => {
     let params = {
       username: data.mobile,
@@ -230,22 +234,26 @@ export function register(data){
     }
     Bmob.User.register(params).then(res => {
       console.log(res)
-      //  注册成功后往userInfo表里添数据
-      const pointer = Bmob.Pointer('_User')
-      const poiID = pointer.set(res.objectId)
-      let da = {
-        username: data.mobile,
-        status: '0',
-        type: '2',
-        user: poiID,
-        nickName:!!data.nickName?data.nickName:''
-      }
-      Bomb_Add('userInfo', da).then(t => {
-        res.uObjectId = t.objectId
+      if(type){
+        //  注册成功后往userInfo表里添数据
+        const pointer = Bmob.Pointer('_User')
+        const poiID = pointer.set(res.objectId)
+        let da = {
+          username: data.mobile,
+          status: '0',
+          type: '2',
+          user: poiID,
+          nickName:!!data.nickName?data.nickName:''
+        }
+        Bomb_Add('userInfo', da).then(t => {
+          res.uObjectId = t.objectId
+          resolve(res)
+        }).catch(err => {
+          reject(err)
+        })
+      }else{
         resolve(res)
-      }).catch(err => {
-        reject(err)
-      })
+      }
     }).catch(err => {
       console.log(err)
       reject(err)

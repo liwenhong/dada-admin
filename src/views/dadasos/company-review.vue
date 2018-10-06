@@ -3,11 +3,11 @@
     <div class="filter-container">
       <el-date-picker v-model="listQuery.time" type="daterange" align="right" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions" class="filter-item" format="yyyy 年 MM 月 dd 日" value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
       <!-- <el-input v-model="listQuery.mobile" placeholder="手机号查询" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter"/> -->
-      <el-select v-model="listQuery.status" placeholder="车辆状态" clearable class="filter-item" style="width: 130px">
+      <el-select v-model="listQuery.status" placeholder="企业状态" clearable class="filter-item" style="width: 130px">
         <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name" :value="item.key"/>
       </el-select>
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">{{ $t('table.search') }}</el-button>
-      <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">添加车辆</el-button>
+      <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">添加企业</el-button>
       <!-- <el-button v-waves :loading="downloadLoading" class="filter-item" type="primary" icon="el-icon-download" @click="handleDownload">{{ $t('table.export') }}</el-button> -->
     </div>
     <el-table
@@ -20,7 +20,7 @@
       <el-table-column type="selection" fixed></el-table-column>
       <el-table-column :label="$t('table.actions')" align="center" fixed width="120" class-name="small-padding fixed-width">
         <template slot-scope="scope">
-          <el-button type="primary" size="mini" v-if="scope.row.status !='2'" @click="handleReview(scope.row)">审核</el-button>
+          <el-button type="primary" size="mini" v-if="scope.row.status !='1'" @click="handleReview(scope.row)">审核</el-button>
           <!-- <el-button size="mini" type="danger" v-if="roles.indexOf('admin') >=0" @click="handleModifyStatus(scope.row,'deleted')">{{ $t('table.delete') }}
           </el-button> -->
         </template>
@@ -30,42 +30,27 @@
           <span>{{ scope.row.objectId }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="车主姓名" min-width="200px" prop="realName" align="center">
+      <el-table-column label="企业名称" min-width="200px" prop="companyName" align="center">
       </el-table-column>
-      <el-table-column label="车主电话" min-width="120px" prop="mobile" align="center">
+      <el-table-column label="企业法人(负责人)" min-width="120px" prop="companyCEO" align="center">
       </el-table-column>
-      <el-table-column label="身份证号" min-width="200px" prop="cardId" align="center">
+      <el-table-column label="法人电话" min-width="200px" prop="chargeMobile" align="center">
       </el-table-column>
-      <el-table-column label="车牌号" min-width="200px" prop="carNumber" align="center">
+      <el-table-column label="企业地址" min-width="200px" prop="companyAddress" align="center">
       </el-table-column>
-      <el-table-column label="身份证正面" width="180px" align="center">
+      <el-table-column label="企业营业执照" width="180px" align="center">
         <template slot-scope="scope">
-          <img class="imgClass" :src="scope.row.cardFoward" alt="">
-        </template>
-      </el-table-column>
-      <el-table-column label="身份证反面" width="180px" align="center">
-        <template slot-scope="scope">
-          <img class="imgClass" :src="scope.row.cardBack" alt="">
-        </template>
-      </el-table-column>
-      <el-table-column label="行驶证" width="180px" align="center">
-        <template slot-scope="scope">
-          <img class="imgClass" :src="scope.row.xingshiCard" alt="">
-        </template>
-      </el-table-column>
-      <el-table-column label="驾驶证" width="180px" align="center">
-        <template slot-scope="scope">
-          <img class="imgClass" :src="scope.row.drivieCard" alt="">
-        </template>
-      </el-table-column>
-      <el-table-column label="所属公司" v-if="roles.indexOf('admin')>=0" width="180px" align="center">
-        <template slot-scope="scope">
-          <span>{{!!scope.row.company?scope.row.company.companyName:'无'}}</span>
+          <img class="imgClass" :src="scope.row.companyCard" alt="">
         </template>
       </el-table-column>
       <el-table-column label="提交时间" width="180px" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.createdAt}}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="更新时间" width="180px" align="center">
+        <template slot-scope="scope">
+          <span>{{ scope.row.updatedAt}}</span>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="110px" align="center" prop="status">
@@ -80,43 +65,25 @@
       <el-pagination v-show="total>0" :current-page="listQuery.page" :page-sizes="[10,20,30, 50]" :page-size="listQuery.limit" :total="total" background layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange" @current-change="handleCurrentChange"/>
     </div>
 
-    <el-dialog :title="dialogStatus=='create'?'添加车主':'车主审核'" :visible.sync="dialogFormVisible">
+    <el-dialog :title="dialogStatus=='create'?'添加企业':'企业审核'" :visible.sync="dialogFormVisible">
       <el-form ref="dataForm" :model="rowInfo" label-position="right" label-width="120px" style="width: 100%;" :rules="rules">
-        <el-form-item label="选择公司" v-if="roles.indexOf('admin')>=0 && dialogStatus =='create'">
-          <el-select v-model="company" class="filter-item" placeholder="选择公司(散户不选，仅限超级管理员操作)" @focus="chooseCompany">
-            <el-option v-for="(item,i) in companyOptions" :key="i" :label="item.companyName" :value="item.objectId"/>
-          </el-select>
+        <el-form-item label="企业名称" prop="companyName">
+          <el-input v-model="rowInfo.companyName" style="width:200px;"></el-input>
         </el-form-item>
-        <el-form-item label="车主姓名" prop="realName">
-          <el-input v-model="rowInfo.realName" style="width:200px;"></el-input>
+        <el-form-item label="企业法人(负责人)" prop="companyCEO">
+          <el-input v-model="rowInfo.companyCEO" style="width:200px;"></el-input>
         </el-form-item>
-        <el-form-item label="车主身份证号" prop="cardId">
-          <el-input v-model="rowInfo.cardId" style="width:200px;"></el-input>
+        <el-form-item label="法人电话" prop="chargeMobile">
+          <el-input v-model="rowInfo.chargeMobile" style="width:200px;"></el-input>
         </el-form-item>
-        <el-form-item label="车主电话" prop="mobile">
-          <el-input v-model="rowInfo.mobile" style="width:200px;"></el-input>
+        <el-form-item label="企业地址" prop="companyAddress">
+          <el-input v-model="rowInfo.companyAddress" style="width:200px;"></el-input>
         </el-form-item>
-        <el-form-item label="车牌号" prop="carNumber">
-          <el-input v-model="rowInfo.carNumber" style="width:200px;"></el-input>
-        </el-form-item>
-        <el-form-item label="身份证正面" prop="cardFoward">
-          <input v-if="dialogStatus=='create'" type="file" id="cardFoward" @change="uploadImg('cardFoward')">
-          <img :src="rowInfo.cardFoward" style="width:100%" alt="">
-        </el-form-item>
-        <el-form-item label="身份证反面" prop="cardBack">
-          <input v-if="dialogStatus=='create'" type="file" id="cardBack" @change="uploadImg('cardBack')">
-          <img :src="rowInfo.cardBack" style="width:100%" alt="">
-        </el-form-item>
-        <el-form-item label="驾驶证照片" prop="drivieCard">
-          <input v-if="dialogStatus=='create'" type="file" id="drivieCard" @change="uploadImg('drivieCard')">
-          <img :src="rowInfo.drivieCard" style="width:100%" alt="">
-        </el-form-item>
-        <el-form-item label="行驶证照片" prop="xingshiCard">
-          <input v-if="dialogStatus=='create'" type="file" id="xingshiCard" @change="uploadImg('xingshiCard')">
-          <img :src="rowInfo.xingshiCard" style="width:100%" alt="">
+        <el-form-item label="企业营业执照" prop="companyCard">
+          <input v-if="dialogStatus=='create'" type="file" id="companyCard" @change="uploadImg('companyCard')">
+          <img :src="rowInfo.companyCard" style="width:100%" alt="">
         </el-form-item>
       </el-form>
-      <span>添加车辆成功后，客户端登录用户名为车主手机号，密码默认 1111111</span>
       <div slot="footer" class="dialog-footer" v-if="dialogStatus != 'create'">
         <!-- <el-button @click="dialogFormVisible = false">{{ $t('table.cancel') }}</el-button> -->
         <el-button type="danger" @click="confirmPass(false)" :loading="actionLoading">不通过</el-button>
@@ -134,16 +101,15 @@
 
 <script>
 import waves from '@/directive/waves' // 水波纹指令
-import { parseTime, pickerOptions, isMobile, isIDCardNum } from '@/utils'
+import { parseTime, pickerOptions, isMobile } from '@/utils'
 import { Bomb_Search, Bmob_Update, Bmob_UploadImg, Bomb_Add, getUserNewInfo, Bmob_CreatePoint, Bomb_Search2, register } from '@/utils/bmob.js'
 import { mapGetters } from 'vuex'
 
 const calendarTypeOptions = [
   { key: '', display_name: '全部' },
-  { key: '-1', display_name: '审核未通过' },
-  { key: '0', display_name: '待审核' },
-  { key: '1', display_name: '审核中' },
-  { key: '2', display_name: '审核通过' },
+  { key: '-1', display_name: '认证失败' },
+  { key: '0', display_name: '未认证' },
+  { key: '1', display_name: '认证通过' }
 ]
 
 const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
@@ -152,7 +118,7 @@ const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
 }, {})
 
 export default {
-  name: 'car-manage',
+  name: 'company-review',
   directives: {
     waves
   },
@@ -162,13 +128,6 @@ export default {
     }
   },
   data() {
-    const validateCardId = (rule, value, callback) => {
-      if (!isIDCardNum(value)) {
-        callback(new Error('请输入正确的身份证号码'))
-      } else {
-        callback()
-      }
-    }
     const validateMobile = (rule, value, callback) => {
       if (!isMobile(value)) {
         callback(new Error('请输入正确的手机号码'))
@@ -195,17 +154,17 @@ export default {
       company:'',
       dialogStatus: '',
       rules:{
-        realName:[
+        companyCEO:[
           { required: true, message: '请输入车主姓名',trigger: 'blur' }
         ],
-        mobile:[
+        chargeMobile:[
           { required: true, trigger: 'blur', validator: validateMobile }
         ],
-        carNumber:[
+        companyName:[
           { required: true, message: '请输入车牌号码', trigger: 'blur'}
         ],
-        cardId:[
-          { required: true, trigger: 'blur', validator: validateCardId }
+        companyAddress:[
+          { required: true, message: '请输入企业地址', trigger: 'blur' }
         ]
       }
     }
@@ -243,39 +202,30 @@ export default {
     confirmPass(val){
       this.actionLoading = true
       let data ={
-        status: val?'2':'-1'
+        status: val?'1':'-1'
       }
-      Bmob_Update('validUser',this.rowInfo.objectId,data).then(res => {
+      Bmob_Update('company',this.rowInfo.objectId,data).then(res => {
         this.$message({ type: 'success', message: '审核成功'})
         this.dialogFormVisible = false
         this.getList()
         this.actionLoading = false
+        //  更改_User表isCompany的值
+        Bmob_Update('_User',this.rowInfo.user.objectId,{'isCompany':'1','roles':['company']}).then(()=> {
+          console.log('状态更改成功')
+        })
       }).catch(err => {
         this.$message.error("请求失败，稍后再试")
         this.actionLoading = false
       })
-      Bmob_Update('_User',this.rowInfo.user.objectId,{ 'status':'1' }).then(()=> {
-
-      })
     },
-   async getList() {
+    getList() {
+      console.log(this.listQuery)
       this.listLoading = true
-      let data = {},objectId,isCompany
-      //  获取当前用户信息，判断是否是企业用户
-      await getUserNewInfo().then((res) => {
-        objectId = res.objectId;
-        isCompany = res.isCompany;
-      })
-      if(!!isCompany && isCompany == '1'){
-        let temp = Bmob_CreatePoint('_User',objectId)
-        await Bomb_Search2('company',{ 'user': temp }).then(g => {
-          data.company = Bmob_CreatePoint('company',g[0].objectId)
-        })
-      }
+      let data = {}
       if(!!this.listQuery.status && this.listQuery.status !=''){
         data.status = this.listQuery.status
       }
-      Bomb_Search('validUser',data,this.listQuery.limit,this.listQuery.page,this.listQuery.time,{ key:'company', value:'company' }).then(res => {
+      Bomb_Search('company',data,this.listQuery.limit,this.listQuery.page,this.listQuery.time).then(res => {
         console.log(res)
         this.listLoading = false
         this.total = res.count
@@ -320,53 +270,27 @@ export default {
       this.$refs['dataForm'].validate(async (valid) => {
         if (valid) {
           this.actionLoading = true
-          let objectId,isCompany,roles;
-          await getUserNewInfo().then((res) => {
-            objectId = res.objectId;
-            isCompany = res.isCompany;
-            roles = res.roles[0]
-          })
-          let u = Bmob_CreatePoint('_User',objectId)
-          // this.rowInfo.user = u;
-              //  该用户是企业用户
-          if((!!isCompany && isCompany ==='1')){
-            await Bomb_Search2('company',{'user':u}).then((c) => {
-              if(c.length > 0){
-                this.rowInfo.company = Bmob_CreatePoint('company',c[0].objectId)
-              }
-            })
-          }else if(roles == 'admin'){
-            //  根据下拉框选择公司
-            if(!!this.company && this.company !=''){
-              this.rowInfo.company = Bmob_CreatePoint('company',this.rowInfo.company2)
-            }
-          }else{
-            this.$message.error("您暂无权限操作")
-            return
-          }
           let d = {
-            mobile:this.rowInfo.mobile,
+            mobile:this.rowInfo.chargeMobile,
             pwd: '1111111',
             status: '1',
-            // carInfo: c,
-            nickName:this.rowInfo.realName
+            nickName:this.rowInfo.companyCEO
           }
           await register(d).then((r) => {
             console.log('注册成功')
             let p = Bmob_CreatePoint('_User',r.objectId)
             this.rowInfo.user = p
-            this.rowInfo.uInfo = Bmob_CreatePoint('userInfo',r.uObjectId)
-            this.rowInfo.status = '2'
-            Bomb_Add('validUser',this.rowInfo).then(async(data) => {
+            this.rowInfo.status = '1'
+            Bomb_Add('company',this.rowInfo).then(async(data) => {
             //  更新user信息
-              let c = Bmob_CreatePoint('validUser',data.objectId)
-              Bmob_Update('_User',r.objectId,{'carInfo': c })
+              Bmob_Update('_User',r.objectId,{ 'isCompany': '1', 'roles':['company'] })
               this.dialogFormVisible = false
               this.actionLoading = false
               this.getList()
             })
           }).catch(err => {
-            this.$message.error("注册失败，请检查手机号码是否重复")
+            console.log(err)
+            this.$message.error("添加失败")
             this.actionLoading = false
           })
         }
