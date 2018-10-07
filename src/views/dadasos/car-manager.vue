@@ -254,7 +254,7 @@ export default {
         this.$message.error("请求失败，稍后再试")
         this.actionLoading = false
       })
-      Bmob_Update('_User',this.rowInfo.user.objectId,{ 'status':'1' }).then(()=> {
+      Bmob_Update('_User',this.rowInfo.user.objectId,{ 'status':'1','nickName': this.rowInfo.realName }).then(()=> {
 
       })
     },

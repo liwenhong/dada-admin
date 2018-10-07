@@ -158,7 +158,7 @@
 <script>
 import waves from '@/directive/waves' // 水波纹指令
 import { parseTime, pickerOptions } from '@/utils'
-import { Bomb_Search, getUserNewInfo, Bmob_CreatePoint, Bmob_CreateLocation, Bomb_Add, Bmob_Update, del } from '@/utils/bmob.js'
+import { Bomb_Search, getUserNewInfo, Bmob_CreatePoint, Bmob_CreateLocation, Bomb_Add, Bmob_Update, del, sendSmsCode, Bomb_Search2, Bmob_QueryLocation } from '@/utils/bmob.js'
 import { searchPlace, transferLocation, getDistanceByPoint } from '@/utils/baidu-map.js'
 import { mapGetters } from 'vuex'
 
@@ -244,8 +244,10 @@ export default {
   methods: {
     changeCar(){
       console.log(this.rowInfo.carUser)
-      this.order.carUser = Bmob_CreatePoint('userInfo',this.rowInfo.carUser)
-      this.rowInfo.status = '1'
+      if(this.rowInfo.carUser){
+        this.order.carUser = Bmob_CreatePoint('userInfo',this.rowInfo.carUser)
+        this.rowInfo.status = '1'
+      }
     },
     async chooseCar(e){
       console.log(e)
@@ -391,7 +393,7 @@ export default {
             status: !!this.rowInfo.status?this.rowInfo.status:'0',
             toLat: o.toLat,
             toLng: o.toLng,
-            amount: parseFloat(o.amount),
+            amount: parseInt(o.amount),
             user: u,
             type: o.type
           }
@@ -408,6 +410,7 @@ export default {
             this.toNotice(this.order.fromLat,this.order.fromLng)
             //  如果没有指定车辆师傅，则通知附近十公里闲置的师傅
           }).catch(err => {
+            console.log(err)
             this.downloadLoading = false
             this.$message.error("订单创建失败，请稍后再试")
           })
@@ -466,6 +469,17 @@ export default {
           if(this.rowInfo.status == '4' || this.rowInfo.status == '-1'){
             //  更改车主状态
             Bmob_Update('userInfo',this.rowInfo.carUser.objectId,{'status':'0'}).then(()=> {})
+          }
+          if(this.rowInfo.status == '-1' && !!this.rowInfo.carUser && this.rowInfo.carUser.nickName){
+            //  短信通知救援车主
+            sendSmsCode(this.rowInfo.carUser.username,'订单取消').then(tt => {
+              //  更改师傅状态
+              Bmob_Update('userInfo',this.rowInfo.carUser.objectId,{'status':'0'}).then(n => {
+
+              })
+            }).catch(err => {
+              //  短信告知师傅失败
+            })
           }
           // if(this.rowInfo.status == '4'){
           //   //  提示
