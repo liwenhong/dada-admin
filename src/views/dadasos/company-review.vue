@@ -155,13 +155,13 @@ export default {
       dialogStatus: '',
       rules:{
         companyCEO:[
-          { required: true, message: '请输入车主姓名',trigger: 'blur' }
+          { required: true, message: '请输入法人姓名',trigger: 'blur' }
         ],
         chargeMobile:[
           { required: true, trigger: 'blur', validator: validateMobile }
         ],
         companyName:[
-          { required: true, message: '请输入车牌号码', trigger: 'blur'}
+          { required: true, message: '请输入企业名称', trigger: 'blur'}
         ],
         companyAddress:[
           { required: true, message: '请输入企业地址', trigger: 'blur' }

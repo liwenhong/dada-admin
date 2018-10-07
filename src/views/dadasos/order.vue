@@ -55,6 +55,11 @@
           <span>{{ !!scope.row.carUser?scope.row.carUser.nickName:'无' }}</span>
         </template>
       </el-table-column>
+      <el-table-column label="车牌号" min-width="200px" prop="" align="center">
+        <template slot-scope="scope">
+          <span>{{ !!scope.row.carUser?scope.row.carUser.carNumber:'无' }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="订单金额" width="110px" align="center" prop="amount" >
       </el-table-column>
       <el-table-column label="状态" width="110px" align="center" prop="status">
@@ -386,7 +391,7 @@ export default {
             status: !!this.rowInfo.status?this.rowInfo.status:'0',
             toLat: o.toLat,
             toLng: o.toLng,
-            amount: o.amount,
+            amount: parseFloat(o.amount),
             user: u,
             type: o.type
           }
