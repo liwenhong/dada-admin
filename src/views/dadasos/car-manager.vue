@@ -349,7 +349,9 @@ export default {
             pwd: '1111111',
             status: '1',
             // carInfo: c,
-            nickName:this.rowInfo.realName
+            nickName:this.rowInfo.realName,
+            carNumber: this.rowInfo.carNumber,
+            company: this.rowInfo.company
           }
           await register(d).then((r) => {
             console.log('注册成功')

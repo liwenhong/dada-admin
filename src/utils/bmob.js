@@ -138,7 +138,40 @@ export function Bomb_Search(table,params,size=20,page = 1,time,include){
       temp.data = t
       resolve(temp)
     }).catch(error => {
+      console.log(error)
       reject(error)
+    })
+  })
+}
+
+export function Bmob_QueryMoneyFlow(table,params,contantIn,size,page,time){
+  return new Promise(async (resolve,reject) => {
+    const query = Bmob.Query(table)
+    for(let key in params){
+      query.equalTo(key,"==", params[key])
+    }
+    for(let i =0;i<contantIn.length;i++){
+      query.statTo("where", '{"user":{"$inQuery":{"where":{"objectId":"'+contantIn[i].objectId+'"},"className":"_User"}}}');
+    }
+    // query.containedIn("user", contantIn);
+    if(!!time && time.length>0){
+      query.equalTo("createdAt", ">", time[0]);
+      query.equalTo("createdAt", "<", time[1]);
+    }
+    query.limit(size);
+    query.skip((page-1)*size);
+    query.order("-updatedAt");
+    let temp = {}
+    await query.count().then(q => {
+      temp.count = q
+    })
+    query.find().then(res => {
+      debug && console.log(res)
+      temp.data = res
+      resolve(temp)
+    }).catch(err => {
+      console.log(err)
+      reject(err)
     })
   })
 }
@@ -243,7 +276,11 @@ export function register(data,type = true){
           status: '0',
           type: '2',
           user: poiID,
-          nickName:!!data.nickName?data.nickName:''
+          nickName:!!data.nickName?data.nickName:'',
+          carNumber: !!data.carNumber?data.carNumber:''
+        }
+        if(!!data.company){
+          da.company = data.company
         }
         Bomb_Add('userInfo', da).then(t => {
           res.uObjectId = t.objectId

@@ -98,7 +98,7 @@ export const asyncRouterMap = [
   },
   ...dadaRouter,
   /** When your routing table is too long, you can split it into small modules**/
-  componentsRouter,
+  // componentsRouter,
   // tableRouter,
 
   { path: '*', redirect: '/404', hidden: true }

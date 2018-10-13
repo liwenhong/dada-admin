@@ -59,6 +59,24 @@ const dadaRouter = [
         meta: { title: 'CompanyReview', icon: 'people', roles: ['admin'] }
       }
     ]
+  },
+  {
+    path: '/',
+    component: Layout,
+    redirect: 'noredirect',
+    name: 'money-review',
+    meta: {
+      title: 'money-review',
+      icon: 'money-review'
+    },
+    children: [
+      {
+        path: 'money-review',
+        component: () => import('@/views/dadasos/money-review'),
+        name: 'MoneyReview',
+        meta: { title: 'MoneyReview', icon: 'money' }
+      }
+    ]
   }
 ]
 
