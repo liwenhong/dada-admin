@@ -1,6 +1,9 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
+      <el-select v-model="listQuery.company" v-if="roles.indexOf('admin')>=0" class="filter-item" placeholder="选择公司(散户不选，仅限超级管理员操作)" @focus="chooseCompany">
+        <el-option v-for="(item,i) in companyOptions" :key="i" :label="item.companyName" :value="item.objectId"/>
+      </el-select>
       <el-date-picker v-model="listQuery.time" type="daterange" align="right" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions" class="filter-item" format="yyyy 年 MM 月 dd 日" value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
       <!-- <el-input v-model="listQuery.mobile" placeholder="手机号查询" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter"/> -->
       <el-select v-model="listQuery.status" placeholder="车辆状态" clearable class="filter-item" style="width: 130px">
@@ -266,10 +269,14 @@ export default {
         objectId = res.objectId;
         isCompany = res.isCompany;
       })
-      if(!!isCompany && isCompany == '1'){
+      if(this.roles.indexOf('admin')>=0){
+        if(!!this.listQuery.company && this.listQuery.company !=''){
+          data.company = this.listQuery.company
+        }
+      }else if(!!isCompany && isCompany == '1'){
         let temp = Bmob_CreatePoint('_User',objectId)
         await Bomb_Search2('company',{ 'user': temp }).then(g => {
-          data.company = Bmob_CreatePoint('company',g[0].objectId)
+          g.length>0 && (data.company = Bmob_CreatePoint('company',g[0].objectId))
         })
       }
       if(!!this.listQuery.status && this.listQuery.status !=''){

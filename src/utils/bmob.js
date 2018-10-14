@@ -368,3 +368,31 @@ export function Bmob_QueryLocation(table,latitude,langitude,km = 10,key,status){
     })
   })
 }
+/**
+ * 批量修改
+ * @param {*} table
+ * @param {*} params
+ * @param {*} params2
+ */
+export function Bmob_updateAll(table,params,params2){
+  return new Promise((resolve,reject) => {
+    const query = Bmob.Query(table);
+    for(let key in params){
+      query.equalTo(key,"==", params[key])
+    }
+    query.find().then(todos => {
+      for(let key in params2){
+        todos.set(key, params2[key]);
+      }
+      todos.saveAll().then(res => {
+        // 成功批量修改
+        console.log(res,'ok')
+        resolve('ok')
+      }).catch(err => {
+        console.log(err)
+        reject(err)
+      });
+    })
+  })
+
+}

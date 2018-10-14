@@ -2,6 +2,9 @@
   <div class="app-container">
     <div id="map"></div>
     <div class="filter-container">
+      <el-select v-model="listQuery.company" v-if="roles.indexOf('admin')>=0" class="filter-item" placeholder="选择公司(散户不选，仅限超级管理员操作)" @focus="chooseCompany">
+        <el-option v-for="(item,i) in companyOptions" :key="i" :label="item.companyName" :value="item.objectId"/>
+      </el-select>
       <el-date-picker v-model="listQuery.time" type="daterange" align="right" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions" class="filter-item" format="yyyy 年 MM 月 dd 日" value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
       <!-- <el-input v-model="listQuery.mobile" placeholder="手机号查询" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter"/> -->
       <el-select v-model="listQuery.status" placeholder="订单状态" clearable class="filter-item" style="width: 130px">
@@ -120,7 +123,7 @@
         <el-form-item :label="dialogStatus=='create'?'指派师傅':'救援师傅'">
           <span v-if="dialogStatus!='create'">{{!!rowInfo.carUser?rowInfo.carUser.nickName:'无'}}</span>
           <el-select v-else v-model="rowInfo.carUser" placeholder="选择救援师傅" @focus="chooseCar" @change="changeCar()">
-            <el-option v-for="(item,i) in carOptions" :key="i" :label="item.realName+'--'+item.carNumber" :value="item.uInfo.objectId" :disabled="!!item.uInfo &&  !!item.uInfo.status && item.uInfo.status!=0"/>
+            <el-option v-for="(item,i) in carOptions" :key="i" :label="item.realName+'--'+item.carNumber" :value="!!item.uInfo.objectId?item.uInfo.objectId:''" :disabled="!!item.uInfo &&  !!item.uInfo.status && item.uInfo.status!=0"/>
           </el-select>
         </el-form-item>
         <el-form-item label="订单金额(元)">
@@ -189,6 +192,7 @@ export default {
   },
   data() {
     return {
+      companyOptions:[],
       city:'长沙市',
       cityOptions: [{key:'1',value:'道路救援'},{key:'2',value:'长途运输'}],
       pickerOptions:pickerOptions,
@@ -242,6 +246,36 @@ export default {
     ])
   },
   methods: {
+    chooseCompany(e){
+      Bomb_Search2('company',{}).then(res => {
+        this.companyOptions = res
+      })
+    },
+    getList(){
+      let data ={
+        company:''
+      }
+      if(this.roles.indexOf('admin')>=0){
+        //  管理员
+        if(!!this.listQuery.company && this.listQuery.company !=''){
+          data.company = Bmob_CreatePoint('company',this.listQuery.company)
+        }
+        this.getInfo(data.company)
+      }else{
+        getUserNewInfo().then(res => {
+          let u = Bmob_CreatePoint('_User',res.objectId)
+          Bomb_Search2('company',{'user':u}).then(data => {
+            if(!!data && data.length>0){
+              data.company = Bmob_CreatePoint('company',data[0].objectId)
+              this.getInfo(data.company)
+            }else{
+              this.$message({ type: 'warning', message: '暂未找到企业，请联系管理员'})
+              return
+            }
+          })
+        })
+      }
+    },
     changeCar(){
       console.log(this.rowInfo.carUser)
       if(this.rowInfo.carUser){
@@ -308,10 +342,15 @@ export default {
         })
       }
     },
-    getList() {
+    getInfo(da) {
       console.log(this.listQuery)
       this.listLoading = true
       let data = {}
+      if(!!da && da !=''){
+        data.company = da
+      }else{
+        data = {}
+      }
       if(!!this.listQuery.status && this.listQuery.status !=''){
         data.status = this.listQuery.status
       }
@@ -520,6 +559,8 @@ export default {
       })
     },
     handleDownload() {
+      this.$message({ type:'warning', message: '该功能暂未实现，敬请期待'})
+      return
       this.downloadLoading = true
       import('@/vendor/Export2Excel').then(excel => {
         const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']

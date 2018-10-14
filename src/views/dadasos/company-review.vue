@@ -102,7 +102,7 @@
 <script>
 import waves from '@/directive/waves' // 水波纹指令
 import { parseTime, pickerOptions, isMobile } from '@/utils'
-import { Bomb_Search, Bmob_Update, Bmob_UploadImg, Bomb_Add, getUserNewInfo, Bmob_CreatePoint, Bomb_Search2, register } from '@/utils/bmob.js'
+import { Bomb_Search, Bmob_Update, Bmob_UploadImg, Bomb_Add, getUserNewInfo, Bmob_CreatePoint, Bomb_Search2, register, Bmob_updateAll } from '@/utils/bmob.js'
 import { mapGetters } from 'vuex'
 
 const calendarTypeOptions = [
@@ -212,6 +212,19 @@ export default {
         //  更改_User表isCompany的值
         Bmob_Update('_User',this.rowInfo.user.objectId,{'isCompany':'1','roles':['company']}).then(()=> {
           console.log('状态更改成功')
+        })
+        //  判断该用户有没有车辆，有则更改车辆信息
+        let u = Bmob_CreatePoint('_User',this.rowInfo.user.objectId)
+        let c = Bmob_CreatePoint('company',this.rowInfo.objectId)
+        Bomb_Search2('validUser',{'user':u}).then(r =>{
+          if(r.length>0){
+            //  批量修改
+            Bmob_updateAll('validUser',{'user':u},{'company':c}).then(l => {
+              console.log(l)
+            }).catch(err => {
+              this.$message.error("状态修改失败")
+            })
+          }
         })
       }).catch(err => {
         this.$message.error("请求失败，稍后再试")
